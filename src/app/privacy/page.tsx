@@ -32,7 +32,7 @@ export default function PrivacyPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-orange-500/30 overflow-x-hidden bg-watermark bg-fixed">
-      <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] pointer-events-none" />
+      <div className="fixed inset-0 bg-[url('/noise.svg')] opacity-[0.05] pointer-events-none" />
       
       <Navbar />
 

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Mail, Lock, LogIn, UserPlus } from "lucide-react";
+import Link from "next/link";
 
 // Mock SVGs for Social Icons
 const DiscordIcon = () => (
@@ -38,99 +39,209 @@ const LineIcon = () => (
 );
 
 export function AuthModal({ children }: { children: React.ReactNode }) {
+  const [activeTab, setActiveTab] = React.useState("login");
+  const [showSuccess, setShowSuccess] = React.useState(false);
+  const [formData, setFormData] = React.useState({
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = React.useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleRegister = async () => {
+    if (!formData.email || !formData.password || !formData.username) return;
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5001/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data));
+        setShowSuccess(true);
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        alert(data.message || "สมัครสมาชิกไม่สำเร็จ");
+      }
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!formData.email || !formData.password) return;
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5001/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data));
+        setShowSuccess(true);
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        alert(data.message || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+      }
+    } catch (error) {
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <Dialog>
+    <Dialog onOpenChange={(open) => { if(!open) setShowSuccess(false) }}>
       <DialogTrigger render={children} />
       <DialogContent className="sm:max-w-[425px] bg-[#121214] border-white/5 text-zinc-100 p-0 overflow-hidden rounded-3xl">
         <div className="relative p-8">
            {/* Background Glow */}
            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-orange-500/10 to-transparent pointer-events-none" />
            
-           <DialogHeader className="mb-6">
-             <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-orange-500">KnizeShop</DialogTitle>
-             <DialogDescription className="text-zinc-400">
-               เข้าสู่ระบบเพื่อจัดการเครื่องและสิทธิพิเศษของคุณ
-             </DialogDescription>
-           </DialogHeader>
-
-           <Tabs defaultValue="login" className="w-full">
-             <TabsList className="grid w-full grid-cols-2 bg-white/5 mb-8 rounded-xl p-1">
-               <TabsTrigger value="login" className="rounded-lg data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-all font-bold">เข้าสู่ระบบ</TabsTrigger>
-               <TabsTrigger value="signup" className="rounded-lg data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-all font-bold">สมัครสมาชิก</TabsTrigger>
-             </TabsList>
-
-             <TabsContent value="login" className="space-y-4">
-               <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-3">
-                     <Button variant="outline" className="w-full border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold py-6 rounded-2xl transition-all hover:scale-[1.02] hover:border-orange-500/50">
-                        <DiscordIcon /> เข้าสู่ระบบด้วย Discord
-                     </Button>
-                     <div className="grid grid-cols-2 gap-3">
-                        <Button variant="outline" className="border-white/5 bg-white/5 hover:bg-white/10 text-[10px] font-bold py-6 rounded-2xl transition-all hover:scale-[1.02] hover:border-orange-500/50">
-                           <GoogleIcon /> Google
-                        </Button>
-                        <Button variant="outline" className="border-white/5 bg-white/5 hover:bg-white/10 text-[10px] font-bold py-6 rounded-2xl transition-all hover:scale-[1.02] hover:border-orange-500/50">
-                           <LineIcon /> Line
-                        </Button>
-                     </div>
+           {showSuccess ? (
+             <div className="py-12 text-center space-y-6 relative z-10">
+                <div className="h-20 w-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                  <LogIn className="h-10 w-10" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-tight">ยินดีต้อนรับเข้าสู้ KnizeShop!</h3>
+                <p className="text-zinc-400 text-sm">เตรียมพบกับประสบการณ์การเล่นเกมที่เหนือระดับ...</p>
+                <div className="pt-4">
+                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-orange-500 animate-[loading_1.5s_ease-in-out]" />
                   </div>
+                </div>
+             </div>
+           ) : (
+             <>
+               <DialogHeader className="mb-6">
+                 <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-orange-500">KnizeShop</DialogTitle>
+                 <DialogDescription className="text-zinc-400">
+                   เข้าสู่ระบบเพื่อจัดการเครื่องและสิทธิพิเศษของคุณ
+                 </DialogDescription>
+               </DialogHeader>
 
-                  <div className="flex items-center gap-4 py-2">
-                    <Separator className="flex-1 bg-white/5" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">หรือ</span>
-                    <Separator className="flex-1 bg-white/5" />
-                  </div>
+               <Tabs defaultValue="login" className="w-full" onValueChange={setActiveTab}>
+                 <TabsList className="grid w-full grid-cols-2 bg-white/5 mb-8 rounded-xl p-1">
+                   <TabsTrigger value="login" className="rounded-lg data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-all font-bold">เข้าสู่ระบบ</TabsTrigger>
+                   <TabsTrigger value="signup" className="rounded-lg data-[state=active]:bg-orange-600 data-[state=active]:text-white transition-all font-bold">สมัครสมาชิก</TabsTrigger>
+                 </TabsList>
 
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                      <Input 
-                        placeholder="ที่อยู่อีเมล" 
-                        className="bg-white/5 border-white/5 pl-10 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
-                      />
-                    </div>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                      <Input 
-                        type="password"
-                        placeholder="รหัสผ่าน" 
-                        className="bg-white/5 border-white/5 pl-10 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
-                      />
-                    </div>
-                  </div>
+                 <TabsContent value="login" className="space-y-4">
+                   <div className="space-y-4">
+                      <div className="grid grid-cols-1 gap-3">
+                         <Button variant="outline" className="w-full border-white/5 bg-white/5 hover:bg-white/10 text-xs font-bold py-6 rounded-2xl transition-all hover:scale-[1.02] hover:border-orange-500/50">
+                            <DiscordIcon /> เข้าสู่ระบบด้วย Discord
+                         </Button>
+                         <div className="grid grid-cols-2 gap-3">
+                            <Button variant="outline" className="border-white/5 bg-white/5 hover:bg-white/10 text-[10px] font-bold py-6 rounded-2xl transition-all hover:scale-[1.02] hover:border-orange-500/50">
+                               <GoogleIcon /> Google
+                            </Button>
+                            <Button variant="outline" className="border-white/5 bg-white/5 hover:bg-white/10 text-[10px] font-bold py-6 rounded-2xl transition-all hover:scale-[1.02] hover:border-orange-500/50">
+                               <LineIcon /> Line
+                            </Button>
+                         </div>
+                      </div>
 
-                  <Button className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 font-bold rounded-2xl shadow-lg shadow-orange-500/20 mt-2 text-white">
-                    <LogIn className="h-4 w-4 mr-2" /> เข้าสู่ระบบ
-                  </Button>
-               </div>
-             </TabsContent>
+                      <div className="flex items-center gap-4 py-2">
+                        <Separator className="flex-1 bg-white/5" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">หรือ</span>
+                        <Separator className="flex-1 bg-white/5" />
+                      </div>
 
-             <TabsContent value="signup" className="space-y-4">
-               <div className="space-y-4 text-center">
-                  <div className="space-y-3">
-                    <Input 
-                      placeholder="ชื่อที่ใช้แสดง" 
-                      className="bg-white/5 border-white/5 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
-                    />
-                    <Input 
-                      placeholder="ที่อยู่อีเมล" 
-                      className="bg-white/5 border-white/5 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
-                    />
-                    <Input 
-                      type="password"
-                      placeholder="รหัสผ่าน" 
-                      className="bg-white/5 border-white/5 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
-                    />
-                  </div>
-                  <Button className="w-full h-12 bg-zinc-100 text-black hover:bg-zinc-200 font-bold rounded-2xl mt-4">
-                    <UserPlus className="h-4 w-4 mr-2" /> สร้างบัญชีใหม่
-                  </Button>
-                  <p className="text-[10px] text-zinc-500 max-w-[250px] mx-auto mt-4 leading-relaxed">
-                    การสมัครสมาชิกหมายถึงคุณยอมรับ <span className="text-white underline cursor-pointer">ข้อกำหนดการให้บริการ</span> และ <span className="text-white underline cursor-pointer">นโยบายความเป็นส่วนตัว</span> ของเรา
-                  </p>
-               </div>
-             </TabsContent>
-           </Tabs>
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                          <Input 
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="ที่อยู่อีเมล" 
+                            className="bg-white/5 border-white/5 pl-10 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
+                          />
+                        </div>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                          <Input 
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            type="password"
+                            placeholder="รหัสผ่าน" 
+                            className="bg-white/5 border-white/5 pl-10 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
+                          />
+                        </div>
+                      </div>
+
+                      <Button 
+                        disabled={loading}
+                        onClick={handleLogin}
+                        className="w-full h-12 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 font-bold rounded-2xl shadow-lg shadow-orange-500/20 mt-2 text-white"
+                      >
+                        {loading ? "กำลังดำเนินการ..." : <><LogIn className="h-4 w-4 mr-2" /> เข้าสู่ระบบ</>}
+                      </Button>
+                   </div>
+                 </TabsContent>
+
+                 <TabsContent value="signup" className="space-y-4">
+                   <div className="space-y-4 text-center">
+                      <div className="space-y-3">
+                        <Input 
+                          name="username"
+                          value={formData.username}
+                          onChange={handleChange}
+                          placeholder="ชื่อที่ใช้แสดง" 
+                          className="bg-white/5 border-white/5 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
+                        />
+                        <Input 
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          placeholder="ที่อยู่อีเมล" 
+                          className="bg-white/5 border-white/5 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
+                        />
+                        <Input 
+                          name="password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          type="password"
+                          placeholder="รหัสผ่าน" 
+                          className="bg-white/5 border-white/5 h-12 rounded-xl placeholder:text-zinc-600 focus:ring-orange-500/20" 
+                        />
+                      </div>
+                      <Button 
+                        disabled={loading}
+                        onClick={handleRegister}
+                        className="w-full h-12 bg-zinc-100 text-black hover:bg-zinc-200 font-bold rounded-2xl mt-4"
+                      >
+                        {loading ? "กำลังดำเนินการ..." : <><UserPlus className="h-4 w-4 mr-2" /> สร้างบัญชีใหม่</>}
+                      </Button>
+                      <p className="text-[10px] text-zinc-500 max-w-[250px] mx-auto mt-4 leading-relaxed">
+                        การสมัครสมาชิกหมายถึงคุณยอมรับ <Link href="/terms" className="text-white underline cursor-pointer">ข้อกำหนดการให้บริการ</Link> และ <Link href="/privacy" className="text-white underline cursor-pointer">นโยบายความเป็นส่วนตัว</Link> ของเรา
+                      </p>
+                   </div>
+                 </TabsContent>
+               </Tabs>
+             </>
+           )}
         </div>
       </DialogContent>
     </Dialog>

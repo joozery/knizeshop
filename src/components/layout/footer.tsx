@@ -95,7 +95,6 @@ export function Footer() {
                  <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
                  <span className="text-[10px] font-bold text-zinc-400 uppercase">System: Operational</span>
               </div>
-              <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">MADE WITH PASSION BY OJAYSNOWY</span>
            </div>
         </div>
       </div>

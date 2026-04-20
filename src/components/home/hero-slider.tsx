@@ -28,15 +28,53 @@ const HERO_SLIDES = [
 ];
 
 export function HeroSlider() {
+  const [slides, setSlides] = React.useState(HERO_SLIDES);
   const [currentSlide, setCurrentSlide] = React.useState(0);
+  const [loading, setLoading] = React.useState(true);
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+  const nextSlide = () => setSlides((prev) => {
+    if (prev.length === 0) return prev;
+    setCurrentSlide((c) => (c + 1) % prev.length);
+    return prev;
+  });
+
+  const prevSlide = () => setSlides((prev) => {
+    if (prev.length === 0) return prev;
+    setCurrentSlide((c) => (c - 1 + prev.length) % prev.length);
+    return prev;
+  });
 
   React.useEffect(() => {
-    const timer = setInterval(nextSlide, 8000);
+    const fetchHero = async () => {
+      try {
+        const res = await fetch("http://localhost:5001/api/hero");
+        const contentType = res.headers.get("content-type");
+        if (res.ok && contentType && contentType.includes("application/json")) {
+          const data = await res.json();
+          if (data.length > 0) setSlides(data);
+        } else {
+          console.warn("Hero API returned non-JSON response");
+        }
+      } catch (error) {
+        console.error("Hero Fetch Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHero();
+    const timer = setInterval(() => {
+      setSlides((prev) => {
+        if (prev.length > 0) {
+          setCurrentSlide((c) => (c + 1) % prev.length);
+        }
+        return prev;
+      });
+    }, 8000);
     return () => clearInterval(timer);
   }, []);
+
+  if (slides.length === 0 && !loading) return null;
 
   return (
     <section className="relative mb-8 md:mb-16 flex items-center justify-center group px-4 md:px-0">
@@ -56,19 +94,15 @@ export function HeroSlider() {
 
       {/* Main Slider Card */}
       <div className="w-full max-w-[1600px] h-[450px] md:h-[500px] relative overflow-hidden rounded-[24px] md:rounded-[32px] shadow-2xl border border-black/5">
-        <AnimatePresence mode="wait">
-          <motion.div
+        <div className="absolute inset-0">
+          <div
             key={currentSlide}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.8 }}
             className="absolute inset-0"
           >
             {/* BACKGROUND IMAGE COVER */}
             <div className="absolute inset-0">
                <img 
-                 src={HERO_SLIDES[currentSlide].image} 
+                 src={slides[currentSlide]?.image} 
                  className={`w-full h-full object-cover transition-transform duration-[20s] ease-linear scale-100 group-hover:scale-110 ${currentSlide === 1 ? 'object-top' : 'object-center'}`}
                  alt="Background"
                />
@@ -78,19 +112,15 @@ export function HeroSlider() {
             </div>
 
             <div className={`relative z-20 h-full flex flex-col justify-center px-8 md:px-20 max-w-4xl text-left`}>
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
+              <div className="space-y-4">
                 <Badge className="bg-orange-500 text-white border-none mb-4 md:mb-5 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] shadow-lg shadow-orange-500/20">
-                  Premium Content
+                  {slides[currentSlide]?.badge || "Premium Content"}
                 </Badge>
                 <h1 className="text-3xl sm:text-5xl md:text-7xl font-black mb-4 md:mb-6 tracking-tighter leading-[1.1] md:leading-none uppercase text-white drop-shadow-sm">
-                  {HERO_SLIDES[currentSlide].title}
+                  {slides[currentSlide]?.title}
                 </h1>
                 <p className="text-sm md:text-lg mb-6 md:mb-8 max-w-lg font-bold leading-relaxed text-zinc-100 opacity-90">
-                  {HERO_SLIDES[currentSlide].description}
+                  {slides[currentSlide]?.description}
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <Button size="lg" className="h-11 md:h-12 px-6 md:px-8 bg-orange-500 hover:bg-orange-600 text-white font-black uppercase tracking-widest rounded-xl shadow-xl shadow-orange-500/20 transition-all hover:translate-y-[-4px] active:scale-95 text-[11px] md:text-[12px]">
@@ -100,21 +130,21 @@ export function HeroSlider() {
                     รายละเอียด
                   </Button>
                 </div>
-              </motion.div>
+              </div>
 
-              {/* Progress Indicators */}
+            {/* Progress Indicators */}
               <div className="flex items-center gap-2 mt-10 md:mt-12">
-                {HERO_SLIDES.map((_, i) => (
+                {slides.map((_, i) => (
                   <div 
                     key={i} 
                     onClick={() => setCurrentSlide(i)}
-                    className={`h-1 transition-all duration-700 rounded-full cursor-pointer ${currentSlide === i ? 'w-12 md:w-16 bg-orange-500' : 'w-3 md:w-4 bg-white/30 hover:bg-white/50'}`} 
+                    className={`h-1 transition-all duration-700 rounded-full cursor-pointer ${currentSlide === i ? 'w-12 md:w-16 bg-orange-50' : 'w-3 md:w-4 bg-white/30 hover:bg-white/50'}`} 
                   />
                 ))}
               </div>
             </div>
-          </motion.div>
-        </AnimatePresence>
+          </div>
+        </div>
       </div>
     </section>
   );

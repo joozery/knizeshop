@@ -119,4 +119,18 @@
       background-position: 400px 200px;
     }
   }
+
+  @keyframes loading {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+}
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
